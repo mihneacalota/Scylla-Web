@@ -4,10 +4,51 @@
 <meta charset="utf-8" />
 <title>TTRPG YouTube Soundboard</title>
 <style>
+  :root {
+    --bg-void: #16110c;
+    --bg-panel: #2b2117;
+    --bg-panel-light: #352920;
+    --border-bronze: #55422e;
+    --border-bronze-light: #7a5f42;
+    --text-parchment: #e4d8bf;
+    --text-muted: #9c8c73;
+    --ember: #c17f3a;
+    --ember-dark: #99622b;
+    --ember-light: #dd9c54;
+    --gold: #c6a227;
+    --wine: #732d2d;
+    --wine-dark: #541f1f;
+    --moss: #52663b;
+    --moss-dark: #3b4c29;
+    --dusk: #574a68;
+    --dusk-dark: #3c3350;
+    --dusk-light: #786a8f;
+  }
+
   body {
-    font-family: system-ui, sans-serif;
-    background-color: #f4f4f8;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text-parchment);
+    background-color: var(--bg-void);
+    background-image:
+      radial-gradient(ellipse 60% 40% at 15% 10%, rgba(193,127,58,0.08), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 85% 60%, rgba(115,45,45,0.06), transparent 60%),
+      repeating-linear-gradient(115deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 4px);
+    background-attachment: fixed;
     margin: 20px;
+  }
+
+  h2, h3 {
+    font-family: Georgia, Cambria, "Times New Roman", serif;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--border-bronze);
+    padding-bottom: 4px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border-bronze);
+    margin: 20px 0;
   }
 
   #controls {
@@ -18,40 +59,63 @@
     align-items: center;
   }
 
+  #session-status { color: var(--text-muted); }
+
   #load-session-btn {
-    background-color: #1a7a4a !important;
-    border: none;
+    background: linear-gradient(180deg, var(--gold), var(--ember-dark)) !important;
+    border: 1px solid var(--ember-dark) !important;
     border-radius: 6px !important;
-    box-shadow: 0 2px 8px rgba(26,122,74,0.25);
+    color: #2a1608 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 8px rgba(0,0,0,0.5);
     transition: background-color 0.15s, box-shadow 0.15s;
   }
   #load-session-btn:hover {
-    background-color: #145e38 !important;
-    box-shadow: 0 4px 12px rgba(26,122,74,0.4);
+    background: linear-gradient(180deg, var(--ember-light), var(--ember-dark)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px rgba(0,0,0,0.6);
   }
 
   input, button, button_rem {
-    padding: 8px;
+    padding: 8px 12px;
     font-size: 14px;
-    border-radius: 4px;
-    border: 1px solid #bbb;
+    font-family: inherit;
+    border-radius: 5px;
+    border: 1px solid var(--border-bronze);
   }
+
+  input {
+    background: var(--bg-panel);
+    color: var(--text-parchment);
+  }
+  input::placeholder { color: var(--text-muted); }
+  input:focus { outline: none; border-color: var(--ember); }
 
   button {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
+    background: linear-gradient(180deg, var(--ember-light), var(--ember));
+    color: #2a1608;
+    font-weight: 600;
+    border: 1px solid var(--ember-dark);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 1px 3px rgba(0,0,0,0.4);
     cursor: pointer;
   }
-  button:hover { background-color: #3b7cc0; }
+  button:hover { background: linear-gradient(180deg, var(--ember), var(--ember-dark)); }
+  button:active { box-shadow: inset 0 2px 4px rgba(0,0,0,0.4); }
 
   button_rem {
-    background-color: #e24a4a;
-    color: white;
-    border: none;
+    background: linear-gradient(180deg, #9a4a4a, var(--wine));
+    color: #f3e4e4;
+    font-weight: 600;
+    border: 1px solid var(--wine-dark);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 1px 3px rgba(0,0,0,0.4);
     cursor: pointer;
   }
-  button_rem:hover { background-color: #b43636; }
+  button_rem:hover { background: linear-gradient(180deg, var(--wine), var(--wine-dark)); }
+
+  .btn-clear {
+    background: linear-gradient(180deg, #9a4a4a, var(--wine));
+    color: #f3e4e4;
+    border: 1px solid var(--wine-dark);
+  }
+  .btn-clear:hover { background: linear-gradient(180deg, var(--wine), var(--wine-dark)); }
 
   #players {
     display: flex;
@@ -60,29 +124,34 @@
   }
 
   .track-card {
-    background: white;
+    background: linear-gradient(180deg, var(--bg-panel-light), var(--bg-panel));
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.03);
     padding: 10px;
-    width: 370px;
+    width: 296px;
     transition: transform 0.15s ease, border 0.15s ease, opacity 0.15s ease;
-    border: 2px solid transparent;
+    border: 2px solid var(--border-bronze);
     cursor: grab;
   }
-  .track-card:hover { transform: scale(1.02); }
+  .track-card:hover { transform: scale(1.02); border-color: var(--border-bronze-light); }
 
   .track-card.dragging {
     opacity: 0.4;
     cursor: grabbing;
   }
 
-  .playing { border: 2px solid #4a90e2; }
+  .playing {
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 0 1px rgba(198,162,39,0.3), 0 0 16px rgba(198,162,39,0.3);
+  }
 
   .track-title {
+    font-family: Georgia, Cambria, "Times New Roman", serif;
     font-weight: bold;
     font-size: 16px;
+    letter-spacing: 0.02em;
     margin-bottom: 6px;
-    color: #333;
+    color: var(--ember-light);
     text-align: center;
     cursor: grab;
   }
@@ -107,31 +176,35 @@
   .muted-note {
     display: block;
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
     text-align: center;
     margin-top: 4px;
   }
 
   /* visual state for loop toggle */
   .toggled {
-    filter: brightness(0.92);
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.3);
+    filter: brightness(0.88);
+    box-shadow: inset 0 0 0 2px rgba(255,224,180,0.25);
   }
 
-  /* NEW: Loop = orange */
+  /* Loop = moss green */
   .btn-loop {
-    background-color: #f39c12;
+    background: linear-gradient(180deg, #759357, var(--moss));
+    color: #eef3e6;
+    border: 1px solid var(--moss-dark);
   }
   .btn-loop:hover {
-    background-color: #d68910;
+    background: linear-gradient(180deg, var(--moss), var(--moss-dark));
   }
 
-  /* NEW: Rename = dark green */
+  /* Rename = aged brass */
   .btn-rename {
-    background-color: #0b6b2d;
+    background: linear-gradient(180deg, #8d7a4e, #6b5a37);
+    color: #f3ecd8;
+    border: 1px solid #4a3d25;
   }
   .btn-rename:hover {
-    background-color: #075321;
+    background: linear-gradient(180deg, #6b5a37, #4a3d25);
   }
 
   /* SFX Section */
@@ -148,18 +221,19 @@
     gap: 10px;
   }
   #sfx-load-btn {
-    background-color: #7b5ea7;
-    color: white;
-    border: none;
+    background: linear-gradient(180deg, var(--dusk-light), var(--dusk));
+    color: #f1ecf7;
+    border: 1px solid var(--dusk-dark);
     padding: 8px 14px;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 600;
   }
-  #sfx-load-btn:hover { background-color: #6a4f91; }
+  #sfx-load-btn:hover { background: linear-gradient(180deg, var(--dusk), var(--dusk-dark)); }
   #sfx-hint {
     font-size: 13px;
-    color: #777;
+    color: var(--text-muted);
   }
   #sfx-grid {
     display: flex;
@@ -170,9 +244,9 @@
     width: 150px;
     height: 80px;
     border-radius: 10px;
-    border: 2px solid transparent;
-    background: linear-gradient(145deg, #3a3a5c, #2a2a44);
-    color: #ccc;
+    border: 2px solid var(--border-bronze);
+    background: linear-gradient(145deg, #3a3348, #272232);
+    color: #b8aec4;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
@@ -188,28 +262,28 @@
   }
   .sfx-btn:hover {
     transform: scale(1.04);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
   .sfx-btn.sfx-playing {
-    border-color: #7b5ea7;
+    border-color: var(--dusk-light);
     color: #fff;
-    box-shadow: 0 0 0 3px rgba(123,94,167,0.35), 0 0 18px rgba(123,94,167,0.4);
-    background: linear-gradient(145deg, #5a3e82, #3d2a60);
+    box-shadow: 0 0 0 3px rgba(87,74,104,0.4), 0 0 18px rgba(87,74,104,0.45);
+    background: linear-gradient(145deg, var(--dusk), var(--dusk-dark));
     animation: sfx-pulse 2s ease-in-out infinite;
   }
   @keyframes sfx-pulse {
-    0%   { box-shadow: 0 0 0 3px rgba(123,94,167,0.35), 0 0 18px rgba(123,94,167,0.4); }
-    50%  { box-shadow: 0 0 0 5px rgba(123,94,167,0.5), 0 0 28px rgba(123,94,167,0.6); }
-    100% { box-shadow: 0 0 0 3px rgba(123,94,167,0.35), 0 0 18px rgba(123,94,167,0.4); }
+    0%   { box-shadow: 0 0 0 3px rgba(87,74,104,0.4), 0 0 18px rgba(87,74,104,0.45); }
+    50%  { box-shadow: 0 0 0 5px rgba(87,74,104,0.55), 0 0 28px rgba(87,74,104,0.65); }
+    100% { box-shadow: 0 0 0 3px rgba(87,74,104,0.4), 0 0 18px rgba(87,74,104,0.45); }
   }
 
   .sfx-btn-green {
     width: 150px;
     height: 80px;
     border-radius: 10px;
-    border: 2px solid transparent;
-    background: linear-gradient(145deg, #1a3a2a, #0f2a1a);
-    color: #aaa;
+    border: 2px solid var(--border-bronze);
+    background: linear-gradient(145deg, #2c3a24, #1b2416);
+    color: #a9b89c;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
@@ -223,19 +297,19 @@
   }
   .sfx-btn-green:hover {
     transform: scale(1.04);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
   .sfx-btn-green.sfx-playing {
-    border-color: #2e7d4f;
+    border-color: var(--moss);
     color: #fff;
-    box-shadow: 0 0 0 3px rgba(46,125,79,0.35), 0 0 18px rgba(46,125,79,0.4);
-    background: linear-gradient(145deg, #1e6b40, #134d2c);
+    box-shadow: 0 0 0 3px rgba(82,102,59,0.4), 0 0 18px rgba(82,102,59,0.45);
+    background: linear-gradient(145deg, var(--moss), var(--moss-dark));
     animation: sfx-pulse-green 2s ease-in-out infinite;
   }
   @keyframes sfx-pulse-green {
-    0%   { box-shadow: 0 0 0 3px rgba(46,125,79,0.35), 0 0 18px rgba(46,125,79,0.4); }
-    50%  { box-shadow: 0 0 0 5px rgba(46,125,79,0.5), 0 0 28px rgba(46,125,79,0.6); }
-    100% { box-shadow: 0 0 0 3px rgba(46,125,79,0.35), 0 0 18px rgba(46,125,79,0.4); }
+    0%   { box-shadow: 0 0 0 3px rgba(82,102,59,0.4), 0 0 18px rgba(82,102,59,0.45); }
+    50%  { box-shadow: 0 0 0 5px rgba(82,102,59,0.55), 0 0 28px rgba(82,102,59,0.65); }
+    100% { box-shadow: 0 0 0 3px rgba(82,102,59,0.4), 0 0 18px rgba(82,102,59,0.45); }
   }
 </style>
 </head>
@@ -288,20 +362,29 @@
 <!-- Upload inputs for each category -->
 <div style="margin-top:1em;">
   <h3>Environment</h3>
-  <input type="file" id="envUpload" accept="image/*" multiple>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <input type="file" id="envUpload" accept="image/*" multiple>
+    <button id="envClearBtn" class="small btn-clear" title="Clear the display screen">Clear</button>
+  </div>
   <div id="envGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5em;"></div>
 </div>
 
 <div style="margin-top:1em;">
-  <h3>Maps</h3>
-  <input type="file" id="mapsUpload" accept="image/*" multiple>
-  <div id="mapsGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5em;"></div>
+  <h3>NPCs</h3>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <input type="file" id="npcsUpload" accept="image/*" multiple>
+    <button id="npcsClearBtn" class="small btn-clear" title="Clear the display screen">Clear</button>
+  </div>
+  <div id="npcsGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5em;"></div>
 </div>
 
 <div style="margin-top:1em;">
-  <h3>NPCs</h3>
-  <input type="file" id="npcsUpload" accept="image/*" multiple>
-  <div id="npcsGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5em;"></div>
+  <h3>Maps</h3>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <input type="file" id="mapsUpload" accept="image/*" multiple>
+    <button id="mapsClearBtn" class="small btn-clear" title="Clear the display screen">Clear</button>
+  </div>
+  <div id="mapsGallery" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:.5em;"></div>
 </div>
 
 <script>
@@ -508,8 +591,8 @@
 
     // Create the player
     players[uid] = new YT.Player(elId, {
-      height: '200',
-      width: '356',
+      height: '160',
+      width: '276',
       videoId,
       playerVars: { controls: 1, rel: 0, modestbranding: 1 },
       events: {
@@ -828,16 +911,27 @@
     npcs: []
   };
 
-  // Utility: create thumbnail card
+  // Post the right "show" message for a given image type
+  function showImage(type, url, name) {
+    if (type === "env") {
+      displayChannel.postMessage({type:"SHOW_ENVIRONMENT", data:{url,name}});
+    } else if (type === "maps") {
+      displayChannel.postMessage({type:"SHOW_MAP", data:{url,name}});
+    } else if (type === "npcs") {
+      displayChannel.postMessage({type:"SHOW_NPC", data:{url,name}});
+    }
+  }
+
+  // Utility: create thumbnail card. Click the image itself to show it on the display screen.
   function createThumb({id, url, name, type}) {
     const thumb = document.createElement("div");
     thumb.style = `
       width:160px; height:auto;
       display:flex; flex-direction:column; align-items:center;
       overflow:hidden; position:relative;
-      cursor:pointer; border:1px solid #444;
+      border:1px solid var(--border-bronze);
       padding:6px; border-radius:6px;
-      background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1);
+      background:var(--bg-panel-light); box-shadow:0 2px 5px rgba(0,0,0,0.4);
     `;
     thumb.title = name;
 
@@ -851,77 +945,22 @@
       height:120px;
       object-fit:cover;
       border-radius:4px;
+      cursor:pointer;
     `;
+    img.title = `Click to show "${displayName}" on the display screen`;
+    img.onclick = () => showImage(type, url, name);
 
     const caption = document.createElement("div");
     caption.textContent = displayName;
     caption.style = `
       margin-top:6px;
       font-size:13px;
-      color:#333;
+      color:var(--text-parchment);
       text-align:center;
       word-break:break-word;
     `;
 
-    const btnContainer = document.createElement("div");
-    btnContainer.style = `
-      display:flex;
-      gap:6px;
-      margin-top:6px;
-      justify-content:center;
-    `;
-
-    const btnShow = document.createElement("button");
-    btnShow.textContent = "Show";
-    btnShow.style = `
-      padding:4px 8px;
-      font-size:12px;
-      border:1px solid #4a90e2;
-      background:#4a90e2;
-      color:white;
-      border-radius:3px;
-      cursor:pointer;
-    `;
-    btnShow.onmouseover = () => btnShow.style.background = "#3b7cc0";
-    btnShow.onmouseout  = () => btnShow.style.background = "#4a90e2";
-    btnShow.onclick = (ev) => {
-      ev.stopPropagation();
-      if (type === "env") {
-        displayChannel.postMessage({type:"SHOW_ENVIRONMENT", data:{url,name}});
-      } else if (type === "maps") {
-        displayChannel.postMessage({type:"SHOW_MAP", data:{url,name}});
-      } else if (type === "npcs") {
-        displayChannel.postMessage({type:"SHOW_NPC", data:{url,name}});
-      }
-    };
-
-    const btnClear = document.createElement("button");
-    btnClear.textContent = "Clear";
-    btnClear.style = `
-      padding:4px 8px;
-      font-size:12px;
-      border:1px solid #e24a4a;
-      background:#e24a4a;
-      color:white;
-      border-radius:3px;
-      cursor:pointer;
-    `;
-    btnClear.onmouseover = () => btnClear.style.background = "#b43636";
-    btnClear.onmouseout  = () => btnClear.style.background = "#e24a4a";
-    btnClear.onclick = (ev) => {
-      ev.stopPropagation();
-      if (type === "npcs") {
-        displayChannel.postMessage({type:"CLEAR_NPC"});
-      } else {
-        displayChannel.postMessage({type:"CLEAR_BG"});
-      }
-    };
-
-    // Add buttons to container
-    btnContainer.append(btnShow, btnClear);
-
-    // Append in order: image → caption → buttons
-    thumb.append(img, caption, btnContainer);
+    thumb.append(img, caption);
     return thumb;
   }
 
@@ -952,6 +991,11 @@
   setupUpload("envUpload", "envGallery", "env");
   setupUpload("mapsUpload", "mapsGallery", "maps");
   setupUpload("npcsUpload", "npcsGallery", "npcs");
+
+  // Row-level Clear buttons: wipe whatever that row's type is currently showing
+  document.getElementById("envClearBtn").onclick = () => displayChannel.postMessage({type:"CLEAR_BG"});
+  document.getElementById("mapsClearBtn").onclick = () => displayChannel.postMessage({type:"CLEAR_BG"});
+  document.getElementById("npcsClearBtn").onclick = () => displayChannel.postMessage({type:"CLEAR_NPC"});
 
   // ---- SFX Section ----
   const SFX_FADE_MS = 2000;
