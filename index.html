@@ -65,10 +65,16 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     padding: 10px;
     width: 370px;
-    transition: transform 0.15s ease, border 0.15s ease;
+    transition: transform 0.15s ease, border 0.15s ease, opacity 0.15s ease;
     border: 2px solid transparent;
+    cursor: grab;
   }
   .track-card:hover { transform: scale(1.02); }
+
+  .track-card.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+  }
 
   .playing { border: 2px solid #4a90e2; }
 
@@ -78,6 +84,7 @@
     margin-bottom: 6px;
     color: #333;
     text-align: center;
+    cursor: grab;
   }
 
   /* UPDATED: force two lines by stacking rows */
@@ -317,9 +324,22 @@
   // scene = { version: 2, tracks: [ { idx, name, url, videoId, loop } ] }
   let tracks = [];
 
-  // helpers to find/update tracks by idx
-  function getTrack(idx) { return tracks.find(t => t.idx === idx); }
-  function removeTrackFromModel(idx) { tracks = tracks.filter(t => t.idx !== idx); }
+  // helpers to find/update tracks
+  // uid = permanent identity (keys players/cardElems/fadeTimers, never reused)
+  // idx = display number (1..N), recomputed from order on add/remove/reorder
+  function getTrackByUid(uid) { return tracks.find(t => t.uid === uid); }
+  function getTrackByIdx(idx) { return tracks.find(t => t.idx === idx); }
+  function removeTrackFromModel(uid) { tracks = tracks.filter(t => t.uid !== uid); }
+
+  // Recompute display numbers from current track order and refresh titles
+  function renumberTracks() {
+    tracks.forEach((t, i) => {
+      t.idx = i + 1;
+      const card = cardElems[t.uid];
+      const titleEl = card && card.querySelector('.track-title');
+      if (titleEl) titleEl.textContent = formatTitle(t.idx, t.name);
+    });
+  }
 
   // Display title as "N. Name"
   function formatTitle(idx, name) {
@@ -396,7 +416,7 @@
       crossfade: () => crossfadeTrack(n),
 
       toggleLoop: (btnEl) => {
-        const tr = getTrack(n);
+        const tr = getTrackByUid(n);
         if (!tr) return;
         tr.loop = !tr.loop;
         // Visual + label update
@@ -409,13 +429,13 @@
         }
       },
       rename: (titleEl) => {
-        const tr = getTrack(n);
+        const tr = getTrackByUid(n);
         if (!tr) return;
         const next = prompt('Rename track:', tr.name || 'Untitled Track');
         if (next !== null) {
           const newName = (next || '').trim() || 'Untitled Track';
           tr.name = newName;
-          titleEl.textContent = formatTitle(n, newName);
+          titleEl.textContent = formatTitle(tr.idx, newName);
         }
       },
       remove: () => {
@@ -428,14 +448,25 @@
         if (card && card.parentNode) card.parentNode.removeChild(card);
         delete cardElems[n];
         removeTrackFromModel(n);
+        renumberTracks();
       }
     };
   }
 
-  function buildCard(idx, name, videoId, loop = true) {
+  function buildCard(uid, idx, name, videoId, loop = true) {
     const card = document.createElement('div');
     card.className = 'track-card';
-    cardElems[idx] = card;
+    card.draggable = true;
+    card.dataset.uid = uid;
+    cardElems[uid] = card;
+
+    card.addEventListener('dragstart', () => {
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      syncTrackOrderFromDOM();
+    });
 
     const title = document.createElement('div');
     title.className = 'track-title';
@@ -443,7 +474,7 @@
     card.appendChild(title);
 
     const playerDiv = document.createElement('div');
-    const elId = `player-${idx}`;
+    const elId = `player-${uid}`;
     playerDiv.id = elId;
     card.appendChild(playerDiv);
 
@@ -453,30 +484,30 @@
     // UPDATED: two forced rows
     actions.innerHTML = `
       <div class="action-row">
-        <button class="small" id="play-${idx}">Play</button>
-        <button class="small" id="stop-${idx}">Stop</button>
-        <button class="small" id="fadein-${idx}">Fade In</button>
-        <button class="small" id="fadeout-${idx}">Fade Out</button>
-        <button class="small" id="crossfade-${idx}" title="Fade out all other tracks and fade in this one">Crossfade</button>
+        <button class="small" id="play-${uid}">Play</button>
+        <button class="small" id="stop-${uid}">Stop</button>
+        <button class="small" id="fadein-${uid}">Fade In</button>
+        <button class="small" id="fadeout-${uid}">Fade Out</button>
+        <button class="small" id="crossfade-${uid}" title="Fade out all other tracks and fade in this one">Crossfade</button>
       </div>
 
       <div class="action-row">
-        <button class="small btn-loop" id="loop-${idx}" title="Toggle looping for this video"></button>
-        <button class="small btn-rename" id="rename-${idx}" title="Rename this track">Rename</button>
-        <button_rem class="small" id="remove-${idx}" title="Remove this track">Remove</button_rem>
+        <button class="small btn-loop" id="loop-${uid}" title="Toggle looping for this video"></button>
+        <button class="small btn-rename" id="rename-${uid}" title="Rename this track">Rename</button>
+        <button_rem class="small" id="remove-${uid}" title="Remove this track">Remove</button_rem>
       </div>
     `;
     card.appendChild(actions);
 
     const note = document.createElement('span');
     note.className = 'muted-note';
-    note.textContent = 'Tip: Click Play/Fade to unmute due to browser autoplay rules.';
+    note.textContent = 'Tip: Click Play/Fade to unmute due to browser autoplay rules. Drag a card to reorder.';
     card.appendChild(note);
 
     document.getElementById('players').appendChild(card);
 
     // Create the player
-    players[idx] = new YT.Player(elId, {
+    players[uid] = new YT.Player(elId, {
       height: '200',
       width: '356',
       videoId,
@@ -484,16 +515,16 @@
       events: {
         onReady: e => {
           e.target.setVolume(0); // start silent to satisfy autoplay policies
-          const h = makeHandlers(idx);
+          const h = makeHandlers(uid);
 
           // wire up controls
-          document.getElementById(`play-${idx}`).onclick = h.play;
-          document.getElementById(`stop-${idx}`).onclick = h.stop;
-          document.getElementById(`fadein-${idx}`).onclick = h.fadeIn;
-          document.getElementById(`fadeout-${idx}`).onclick = h.fadeOut;
-          document.getElementById(`crossfade-${idx}`).onclick = h.crossfade;
+          document.getElementById(`play-${uid}`).onclick = h.play;
+          document.getElementById(`stop-${uid}`).onclick = h.stop;
+          document.getElementById(`fadein-${uid}`).onclick = h.fadeIn;
+          document.getElementById(`fadeout-${uid}`).onclick = h.fadeOut;
+          document.getElementById(`crossfade-${uid}`).onclick = h.crossfade;
 
-          const loopBtn = document.getElementById(`loop-${idx}`);
+          const loopBtn = document.getElementById(`loop-${uid}`);
           // initialize loop button visual state and label
           if (loop) {
             loopBtn.classList.add('toggled');
@@ -503,10 +534,10 @@
           }
           loopBtn.onclick = () => h.toggleLoop(loopBtn);
 
-          const renameBtn = document.getElementById(`rename-${idx}`);
+          const renameBtn = document.getElementById(`rename-${uid}`);
           renameBtn.onclick = () => h.rename(title);
 
-          const removeBtn = document.getElementById(`remove-${idx}`);
+          const removeBtn = document.getElementById(`remove-${uid}`);
           removeBtn.onclick = h.remove;
         },
         onStateChange: e => {
@@ -518,7 +549,7 @@
 
           // handle software loop when video ends
           if (e.data === YT.PlayerState.ENDED) {
-            const tr = getTrack(idx);
+            const tr = getTrackByUid(uid);
             if (tr?.loop) {
               try {
                 e.target.seekTo(0, true);
@@ -537,13 +568,56 @@
     if (!videoId) { alert('Invalid YouTube URL'); return; }
 
     playerCount++;
-    const idx = playerCount;
+    const uid = playerCount;
+    const idx = tracks.length + 1;
 
     // default loop ON
-    const track = { idx, name, url, videoId, loop: true };
+    const track = { uid, idx, name, url, videoId, loop: true };
     tracks.push(track);
-    buildCard(idx, name, videoId, track.loop);
+    buildCard(uid, idx, name, videoId, track.loop);
   }
+
+  // Reorder the tracks array to match the current on-screen card order,
+  // then refresh display numbers (used by titles and numpad shortcuts).
+  function syncTrackOrderFromDOM() {
+    const uids = [...document.querySelectorAll('#players .track-card')]
+      .map(el => Number(el.dataset.uid));
+    tracks.sort((a, b) => uids.indexOf(a.uid) - uids.indexOf(b.uid));
+    renumberTracks();
+  }
+
+  // Find the card nearest the cursor to decide where a dragged card should land.
+  function getDragAfterElement(container, x, y) {
+    const cards = [...container.querySelectorAll('.track-card:not(.dragging)')];
+    let closest = null;
+    let closestDist = Infinity;
+    for (const card of cards) {
+      const box = card.getBoundingClientRect();
+      const cx = box.left + box.width / 2;
+      const cy = box.top + box.height / 2;
+      const dist = Math.hypot(x - cx, y - cy);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = { card, cx };
+      }
+    }
+    if (!closest) return null;
+    return x < closest.cx ? closest.card : closest.card.nextElementSibling;
+  }
+
+  const playersContainer = document.getElementById('players');
+  playersContainer.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const dragging = playersContainer.querySelector('.dragging');
+    if (!dragging) return;
+    const after = getDragAfterElement(playersContainer, e.clientX, e.clientY);
+    if (after == null) {
+      playersContainer.appendChild(dragging);
+    } else if (after !== dragging) {
+      playersContainer.insertBefore(dragging, after);
+    }
+  });
+  playersContainer.addEventListener('drop', (e) => e.preventDefault());
 
   // Clear all players/cards/state (used before import)
   function clearScene() {
@@ -598,10 +672,11 @@
       const loop = (typeof tr.loop === 'boolean') ? tr.loop : true; // default ON
       if (vid) {
         playerCount++;
-        const idx = playerCount;
-        const track = { idx, name, url, videoId: vid, loop };
+        const uid = playerCount;
+        const idx = tracks.length + 1;
+        const track = { uid, idx, name, url, videoId: vid, loop };
         tracks.push(track);
-        buildCard(idx, name, vid, loop);
+        buildCard(uid, idx, name, vid, loop);
       }
     });
   }
@@ -657,9 +732,10 @@
     if (!m) return;
 
     const idx = Number(m[1]);
-    if (players[idx]) {
+    const tr = getTrackByIdx(idx);
+    if (tr && players[tr.uid]) {
       e.preventDefault();
-      crossfadeTrack(idx);
+      crossfadeTrack(tr.uid);
     }
   });
 
